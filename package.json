@@ -1,0 +1,14 @@
+{
+  "name": "mongodb-migration-tool",
+  "version": "1.0.0",
+  "description": "Simple MongoDB database migration tool using Node.js",
+  "main": "src/migrate.js",
+  "scripts": {
+    "start": "node src/migrate.js",
+    "migrate": "node src/migrate.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "mongodb": "^6.12.0"
+  }
+}
