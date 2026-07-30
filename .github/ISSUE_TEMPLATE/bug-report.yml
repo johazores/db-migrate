@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a reproducible problem
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve db-migrate. Remove credentials and private data from all examples.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+    validations:
+      required: true
+  - type: dropdown
+    id: databases
+    attributes:
+      label: Database direction
+      options:
+        - MongoDB to MongoDB
+        - MongoDB to MySQL
+        - MongoDB to PostgreSQL
+        - MySQL to MongoDB
+        - MySQL to PostgreSQL
+        - PostgreSQL to MongoDB
+        - PostgreSQL to MySQL
+        - Export or import
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the expected and actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Safe reproduction
+      description: Include sanitized configuration and the smallest reproducible command.
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Validation performed
+      description: List tests or commands already tried.
