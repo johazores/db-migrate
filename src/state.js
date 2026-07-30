@@ -1,6 +1,13 @@
 const fs = require("fs");
 const path = require("path");
-const { ensureDirectory, hash, maskUrl, readJson, writeJson } = require("./utils");
+const {
+  ensureDirectory,
+  hash,
+  maskUrl,
+  readJson,
+  serializeValue,
+  writeJson,
+} = require("./utils");
 
 function stateDirectory(config) {
   return path.resolve(config.stateDirectory || ".db-migrate");
@@ -55,7 +62,7 @@ function loadCheckpoint(config, operation = "migrate") {
 }
 
 function saveCheckpoint(config, checkpoint, operation = "migrate") {
-  writeJson(checkpointPath(config, operation), checkpoint);
+  writeJson(checkpointPath(config, operation), serializeValue(checkpoint));
 }
 
 function clearCheckpoint(config, operation = "migrate") {
