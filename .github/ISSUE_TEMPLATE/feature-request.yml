@@ -1,0 +1,32 @@
+name: Feature request
+description: Propose a focused migration or portability improvement
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Explain the migration workflow that is difficult today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest useful change.
+    validations:
+      required: true
+  - type: textarea
+    id: databases
+    attributes:
+      label: Affected databases
+      description: List the source and target adapters involved.
+    validations:
+      required: true
+  - type: textarea
+    id: tradeoffs
+    attributes:
+      label: Limitations and tradeoffs
+      description: Note database-specific behavior or compatibility concerns.
