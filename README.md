@@ -1,22 +1,34 @@
 # db-migrate
 
-A small Node.js toolkit for moving schemas and data between MongoDB, MySQL, and PostgreSQL.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-2.0.0-informational.svg)](package.json)
 
-It is designed for migration, export/import, and practical data portability. It is not an ORM and does not add a model layer to your application.
+A lightweight Node.js toolkit for migrating schemas and data across MongoDB, MySQL, and PostgreSQL.
+
+It focuses on migration, export, import, transformation, and practical data portability. It is not an ORM and does not add a model layer to your application.
+
+> **Status:** Active open-source development. Test migrations against a copy and maintain an independent backup before using production data.
 
 ## Features
 
-- MongoDB, MySQL, and PostgreSQL through one adapter interface
+- One focused adapter interface for MongoDB, MySQL, and PostgreSQL
 - Direct database-to-database migration
 - Portable NDJSON export and import
 - Schema inspection, automatic type mapping, and schema diff
 - Batched, low-memory data transfer
-- Checkpoints for resumable migrations
-- Entity selection, per-entity filters, renaming, and JavaScript transforms
-- Dry runs, verbose/debug output, validation, seeding, and guarded rollback
+- Resumable migration checkpoints
+- Entity filters, renaming, and JavaScript transforms
+- Dry runs, validation, seeding, migration history, and guarded rollback
 - Legacy support for the original MongoDB environment variables
 
-## Install
+## Requirements
+
+- Node.js 20 or newer
+- Access to the source and target databases
+- A verified backup before destructive production work
+
+## Installation
 
 ```bash
 npm install
@@ -28,13 +40,11 @@ Run locally:
 node bin/db-migrate.js --help
 ```
 
-After publishing or linking the package:
+After linking or publishing the package:
 
 ```bash
 db-migrate --help
 ```
-
-Requires Node.js 20 or newer.
 
 ## Quick start
 
@@ -44,7 +54,7 @@ Create a starter configuration:
 db-migrate init
 ```
 
-Update `.env`:
+Configure the connections:
 
 ```env
 DB_MIGRATE_SOURCE_URL=mongodb://localhost:27017
@@ -53,27 +63,20 @@ DB_MIGRATE_TARGET_URL=postgresql://postgres:postgres@localhost:5432/app
 DB_MIGRATE_TARGET_SCHEMA=public
 ```
 
-Validate both connections:
+Validate both databases and preview the migration:
 
 ```bash
 db-migrate validate
-```
-
-Preview the migration:
-
-```bash
 db-migrate migrate --dry-run
 ```
 
-Run it:
+Run the migration:
 
 ```bash
 db-migrate migrate
 ```
 
 ## Configuration
-
-`db-migrate.config.js`:
 
 ```js
 module.exports = {
@@ -110,64 +113,7 @@ module.exports = {
 };
 ```
 
-Configuration priority is CLI flags, config file, environment variables, then defaults.
-
-JSON configuration is supported, but JavaScript configuration is required for `transform`.
-
-## Database examples
-
-### MongoDB to PostgreSQL
-
-```bash
-db-migrate migrate \
-  --source-type mongodb \
-  --source-url mongodb://localhost:27017 \
-  --source-database app \
-  --target-type postgres \
-  --target-url postgresql://postgres:postgres@localhost:5432/app \
-  --target-schema public
-```
-
-MongoDB collections become tables. Top-level fields are inferred from a sample. Nested objects and arrays use `JSONB`.
-
-### MySQL to PostgreSQL
-
-```bash
-db-migrate migrate \
-  --source-type mysql \
-  --source-url mysql://root:password@localhost/source_db \
-  --target-type postgres \
-  --target-url postgresql://postgres:password@localhost/target_db
-```
-
-Tables, columns, primary keys, indexes, and compatible foreign keys are copied.
-
-### PostgreSQL to MongoDB
-
-```bash
-db-migrate migrate \
-  --source-type postgres \
-  --source-url postgresql://postgres:password@localhost/source_db \
-  --source-schema public \
-  --target-type mongodb \
-  --target-url mongodb://localhost:27017 \
-  --target-database target_db
-```
-
-Tables become collections. SQL primary keys are used for idempotent upserts when possible.
-
-### MongoDB to MySQL
-
-```bash
-db-migrate migrate \
-  --source-type mongodb \
-  --source-url mongodb://localhost:27017 \
-  --source-database app \
-  --target-type mysql \
-  --target-url mysql://root:password@localhost/app
-```
-
-Nested values map to MySQL `JSON`.
+Configuration priority is CLI flags, configuration file, environment variables, then defaults. JSON configuration is supported, but JavaScript is required for transforms.
 
 ## Commands
 
@@ -182,123 +128,102 @@ db-migrate seed
 db-migrate rollback
 ```
 
-See [docs/cli.md](docs/cli.md) for all options and
-[docs/repository-review.md](docs/repository-review.md) for the original project audit and implementation priorities.
+See the [CLI reference](docs/cli.md) for all options.
+
+## Migration examples
+
+### MongoDB to PostgreSQL
+
+```bash
+db-migrate migrate \
+  --source-type mongodb \
+  --source-url mongodb://localhost:27017 \
+  --source-database app \
+  --target-type postgres \
+  --target-url postgresql://postgres:postgres@localhost:5432/app \
+  --target-schema public
+```
+
+MongoDB collections become tables. Top-level fields are inferred from a configurable sample, while nested objects and arrays use `JSONB`.
+
+### MySQL to PostgreSQL
+
+```bash
+db-migrate migrate \
+  --source-type mysql \
+  --source-url mysql://root:password@localhost/source_db \
+  --target-type postgres \
+  --target-url postgresql://postgres:password@localhost/target_db
+```
+
+Compatible tables, columns, primary keys, indexes, and foreign keys are copied.
+
+### PostgreSQL to MongoDB
+
+```bash
+db-migrate migrate \
+  --source-type postgres \
+  --source-url postgresql://postgres:password@localhost/source_db \
+  --source-schema public \
+  --target-type mongodb \
+  --target-url mongodb://localhost:27017 \
+  --target-database target_db
+```
+
+SQL primary keys are used for idempotent upserts when possible.
 
 ## Export and import
 
-Export selected data:
-
 ```bash
 db-migrate export --entities users,orders --output ./backup
-```
-
-The output is a directory containing:
-
-```text
-backup/
-  manifest.json
-  data/
-    <entity>.ndjson
-```
-
-Import it:
-
-```bash
 db-migrate import --input ./backup
 ```
 
-The format preserves dates, binary values, big integers, MongoDB ObjectIds, Decimal128, and Long values using portable JSON markers.
+The portable format preserves dates, binary values, big integers, MongoDB ObjectIds, Decimal128, and Long values through explicit JSON markers.
 
-## Filtering
+## Architecture
 
-Filters are equality filters and are parameterized for SQL databases.
+The toolkit contains four small layers:
 
-Config:
+1. CLI and configuration parsing
+2. Database adapters
+3. Canonical schema representation
+4. Migration, export, import, validation, diff, seed, and rollback commands
 
-```js
-filters: {
-  users: { active: true },
-  orders: { status: "paid" },
-}
+The adapter interface stays intentionally small so another database can be added without changing the entire CLI. Read the [architecture guide](docs/architecture.md) for details.
+
+## Project structure
+
+```text
+bin/                  command-line entry point
+src/adapters/         MongoDB, MySQL, and PostgreSQL adapters
+src/commands/         migration and portability commands
+src/                  configuration, schema, transfer, and state modules
+test/                 unit and integration-oriented tests
+docs/                 user, architecture, project, and community documentation
 ```
-
-CLI:
-
-```bash
-db-migrate export --filter '{"users":{"active":true}}'
-```
-
-For more advanced filtering, use a JavaScript `transform` to discard rows by returning `null`.
-
-## Resume behavior
-
-Checkpoints are saved under `.db-migrate/checkpoints`.
-
-- MongoDB uses `_id` keyset pagination.
-- SQL tables with one primary key use keyset pagination.
-- Tables without a single primary key use offset pagination.
-- Completed checkpoints are removed after success.
-- Connection URLs are never stored in checkpoint filenames or migration history.
-
-Use `--no-resume` to ignore a checkpoint. For resumable exports, pass an explicit
-`--output` directory so a later run resolves to the same checkpoint and data files.
-
-## Rollback safety
-
-Rollback only drops entities that were newly created by the latest migration:
-
-```bash
-db-migrate rollback --yes
-```
-
-It does not try to reverse updates to existing tables or collections because doing so safely requires a backup or a full change log. Migrations run with `--drop` are marked destructive and cannot be rolled back automatically.
 
 ## Important limitations
 
 Automatic cross-database conversion is intentionally conservative.
 
-- MongoDB schema inference uses top-level fields from a configurable sample. Fields found after sampling are preserved in dynamically added JSON/JSONB columns.
-- Stored procedures, triggers, views, generated expressions, partitions, extensions, and database-specific permissions are not migrated.
-- Complex or database-specific index options may be skipped.
+- MongoDB schema inference samples top-level fields.
+- Stored procedures, triggers, views, generated expressions, partitions, extensions, and database permissions are not migrated.
+- Complex database-specific indexes may be skipped.
 - Foreign keys cannot be enforced in MongoDB.
 - Tables without primary keys are not guaranteed to be idempotent.
-- Existing incompatible column types are reported by `diff`; they are not destructively changed.
-- Large production migrations should be tested against a copy and backed up first.
+- Existing incompatible column types are reported rather than changed destructively.
 
-Use `--strict` to fail instead of warning when an index or constraint cannot be created.
+Use `--strict` to fail when an index or constraint cannot be created.
 
-## Legacy MongoDB configuration
-
-The original variables still work:
-
-```env
-SOURCE_MONGODB_URI=mongodb://localhost:27017
-TARGET_MONGODB_URI=mongodb://localhost:27018
-DB_NAME=app
-BATCH_SIZE=500
-DROP_TARGET=false
-```
-
-The global DNS override and forced `authSource`, IPv4, and retry settings from the original script were removed. Driver options can be supplied explicitly through `source.options` or `target.options`.
-
-## Documentation
-
-- [CLI reference](docs/cli.md)
-- [Configuration](docs/configuration.md)
-- [Architecture](docs/architecture.md)
-- [Type mapping and limitations](docs/type-mapping.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Contributing](CONTRIBUTING.md)
-
-## Development
+## Development and testing
 
 ```bash
 npm test
 npm run check
 ```
 
-Integration tests run only when matching credentials are provided:
+Integration tests run only when matching credentials are supplied:
 
 ```env
 TEST_MONGODB_URL=mongodb://localhost:27017
@@ -307,6 +232,24 @@ TEST_MYSQL_URL=mysql://root:password@localhost/db_migrate_test
 TEST_POSTGRES_URL=postgresql://postgres:password@localhost/db_migrate_test
 ```
 
+## Documentation
+
+- [Documentation index](docs/index.md)
+- [CLI reference](docs/cli.md)
+- [Configuration](docs/configuration.md)
+- [Architecture](docs/architecture.md)
+- [Type mapping and limitations](docs/type-mapping.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Roadmap](docs/roadmap.md)
+- [Changelog](docs/changelog.md)
+- [Contributing](docs/contributing.md)
+- [Security policy](docs/security.md)
+- [Code of conduct](docs/code-of-conduct.md)
+
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
+
+## Author
+
+Created and maintained by [Johanssen Azores](https://github.com/johazores).
