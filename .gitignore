@@ -1,2 +1,6 @@
 node_modules
 .env
+.db-migrate
+db-export-*
+coverage
+*.log
